@@ -575,23 +575,14 @@ if (rawLink.toLowerCase().includes('http')) {
     const cleanUrl = rawLink.substring(rawLink.toLowerCase().indexOf('http'));
     docBtn = `<a href="${cleanUrl}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium bg-blue-50 text-blue-600 border border-blue-200 rounded-md hover:bg-blue-100"><i class="fa-solid fa-file-pdf"></i> เอกสาร</a>`;
 } else if (rawLink !== '' && rawLink !== '-' && rawLink !== 'undefined' && rawLink !== 'null') {
-    // 2. แกะเลขเดือนจาก bookingDate เพื่อเปิดไฟล์ตรงๆ ในโฟลเดอร์เดือนนั้นๆ
-    let monthFolder = "เดือน 9";
-    if (item.bookingDate && item.bookingDate.includes('-')) {
-        const monthNum = parseInt(item.bookingDate.split('-')[1], 10);
-        if (!isNaN(monthNum)) {
-            monthFolder = `เดือน ${monthNum}`;
-        }
-    }
-
-    // สร้าง Direct URL แบบพาทโฟลเดอร์ถูกต้อง (ไม่ติด 404)
-    const exactFileUrl = `https://tdsupplychain-my.sharepoint.com/personal/dc4_return_tdsc_co_th/Documents/${encodeURIComponent(monthFolder)}/${encodeURIComponent(rawLink)}`;
-    docBtn = `<a href="${exactFileUrl}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium bg-blue-50 text-blue-600 border border-blue-200 rounded-md hover:bg-blue-100"><i class="fa-solid fa-file-pdf"></i> เอกสาร</a>`;
+    // ใช้ SharePoint Search ค้นหาชื่อไฟล์โดยตรง (ไม่ติด 404 และค้นพบทุกโฟลเดอร์เดือน)
+    const cleanFileName = encodeURIComponent(rawLink);
+    const searchUrl = `https://tdsupplychain-my.sharepoint.com/personal/dc4_return_tdsc_co_th/_layouts/15/search.aspx?q=${cleanFileName}`;
+    docBtn = `<a href="${searchUrl}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium bg-blue-50 text-blue-600 border border-blue-200 rounded-md hover:bg-blue-100"><i class="fa-solid fa-file-pdf"></i> เอกสาร</a>`;
 } else {
-    // 3. กรณีไม่มีเอกสาร
+    // กรณีไม่มีเอกสาร
     docBtn = `<span class="text-slate-300 text-xs">-</span>`;
 }
-
                 let remarkText = item.remark || item.missingReason || '-';
                 if (isDuplicatePo) {
                     remarkText = `<span class="text-purple-600 font-semibold">⚠️ พบเลข PO ซ้ำกัน (${item.poNumber})</span>` + (remarkText !== '-' ? ` | ${remarkText}` : '');
