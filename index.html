@@ -571,16 +571,24 @@
 let docBtn = '';
 
 if (rawLink.toLowerCase().includes('http')) {
-    // 1. กรณีเป็น URL ตัวเต็มที่ก๊อปปี้มาจาก OneDrive (เปิดตรงเข้าไฟล์ได้ทุกโฟลเดอร์)
+    // 1. กรณีใน Excel ใส่ URL ตัวเต็มมา (เปิดเข้าไฟล์ตรงๆ ได้ทุกที่)
     const cleanUrl = rawLink.substring(rawLink.toLowerCase().indexOf('http'));
     docBtn = `<a href="${cleanUrl}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium bg-blue-50 text-blue-600 border border-blue-200 rounded-md hover:bg-blue-100"><i class="fa-solid fa-file-pdf"></i> เอกสาร</a>`;
 } else if (rawLink !== '' && rawLink !== '-' && rawLink !== 'undefined' && rawLink !== 'null') {
-    // 2. กรณีส่งมาเฉพาะชื่อไฟล์: ค้นหาชื่อไฟล์ใน OneDrive ข้ามทุกโฟลเดอร์เดือนให้อัตโนมัติ
-    const searchUrl = `https://tdsupplychain-my.sharepoint.com/personal/dc4_return_tdsc_co_th/_layouts/15/search.aspx?q=${encodeURIComponent(rawLink)}`;
-    docBtn = `<a href="${searchUrl}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium bg-blue-50 text-blue-600 border border-blue-200 rounded-md hover:bg-blue-100"><i class="fa-solid fa-file-pdf"></i> เอกสาร</a>`;
-} else {
+    // 2. แกะเลขเดือนจากวันที่นัดรับ (bookingDate) เช่น '2026-09-18' -> เดือน 9
+    let monthFolder = "1.Return"; // ค่าเริ่มต้นถ้าไม่มีวันที่
+    if (item.bookingDate && item.bookingDate.includes('-')) {
+        const monthNum = parseInt(item.bookingDate.split('-')[1], 10); // แปลง '09' เป็นเลข 9
+        if (!isNaN(monthNum)) {
+            monthFolder = `เดือน ${monthNum}`;
+        }
+    }
 
-    // 4. กรณีที่ยังไม่ได้ส่งสินค้า
+    // สร้าง URL เจาะจงเข้าไฟล์ตรงๆ ในโฟลเดอร์เดือนนั้นๆ
+    const exactFileUrl = `https://tdsupplychain-my.sharepoint.com/personal/dc4_return_tdsc_co_th/Documents/${encodeURIComponent(monthFolder)}/${encodeURIComponent(rawLink)}`;
+    docBtn = `<a href="${exactFileUrl}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium bg-blue-50 text-blue-600 border border-blue-200 rounded-md hover:bg-blue-100"><i class="fa-solid fa-file-pdf"></i> เอกสาร</a>`;
+} else {
+    // 3. กรณีไม่มีข้อมูลเอกสาร
     docBtn = `<span class="text-slate-300 text-xs">-</span>`;
 }
 
