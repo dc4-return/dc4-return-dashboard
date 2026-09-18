@@ -567,22 +567,22 @@
                     ? `<span class="px-2 py-0.5 rounded text-[11px] font-medium bg-blue-50 text-blue-600 border border-blue-100">ครบแล้ว</span>`
                     : `<span class="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-500">ไม่ครบ</span>`;
 
-               let rawLink = String(item.docLink || '').trim();
+let rawLink = String(item.docLink || '').trim();
 let docBtn = '';
 
 if (rawLink.toLowerCase().includes('http')) {
-    // 1. กรณีใน Excel ใส่ URL ตัวเต็มมา (เปิดเข้าไฟล์ตรงๆ ได้ทุกที่)
+    // 1. กรณีเป็น URL ตัวเต็มแบบก๊อปปี้มาจาก SharePoint/OneDrive
     const cleanUrl = rawLink.substring(rawLink.toLowerCase().indexOf('http'));
     docBtn = `<a href="${cleanUrl}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium bg-blue-50 text-blue-600 border border-blue-200 rounded-md hover:bg-blue-100"><i class="fa-solid fa-file-pdf"></i> เอกสาร</a>`;
 } else if (rawLink !== '' && rawLink !== '-' && rawLink !== 'undefined' && rawLink !== 'null') {
-    // 2. แกะเลขเดือนจากวันที่นัดรับ (bookingDate) เช่น '2026-09-18' -> เดือน 9
-    let monthFolder = "1.Return"; // ค่าเริ่มต้นถ้าไม่มีวันที่
-    if (item.bookingDate && item.bookingDate.includes('-')) {
-        const monthNum = parseInt(item.bookingDate.split('-')[1], 10); // แปลง '09' เป็นเลข 9
-        if (!isNaN(monthNum)) {
-            monthFolder = `เดือน ${monthNum}`;
-        }
-    }
+    // 2. ค้นหาชื่อไฟล์อัตโนมัติผ่าน SharePoint Search (ข้ามโฟลเดอร์ เดือน 9/10/11 ให้อัตโนมัติ ไม่ติด 404)
+    const cleanFileName = encodeURIComponent(rawLink);
+    const searchUrl = `https://tdsupplychain-my.sharepoint.com/personal/dc4_return_tdsc_co_th/_layouts/15/search.aspx?q=${cleanFileName}`;
+    docBtn = `<a href="${searchUrl}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium bg-blue-50 text-blue-600 border border-blue-200 rounded-md hover:bg-blue-100"><i class="fa-solid fa-file-pdf"></i> เอกสาร</a>`;
+} else {
+    // 3. กรณีไม่มีเอกสาร
+    docBtn = `<span class="text-slate-300 text-xs">-</span>`;
+}
 
     // สร้าง URL เจาะจงเข้าไฟล์ตรงๆ ในโฟลเดอร์เดือนนั้นๆ
     const exactFileUrl = `https://tdsupplychain-my.sharepoint.com/personal/dc4_return_tdsc_co_th/Documents/${encodeURIComponent(monthFolder)}/${encodeURIComponent(rawLink)}`;
