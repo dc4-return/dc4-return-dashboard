@@ -308,19 +308,26 @@
             }
         }
 
-        function updateDashboard() {
+      function updateDashboard() {
             const dateVal = document.getElementById('filterBookingDate').value;
             const searchVal = document.getElementById('filterSearchText').value.toLowerCase().trim();
             const statusVal = document.getElementById('filterDeliveryStatus').value;
             const completeVal = document.getElementById('filterCompleteness').value;
 
             let filteredData = rawData.filter(item => {
+                const poNumber = item.po || item.poNumber;
+                
                 if (dateVal) {
                     const normBooking = normalizeDate(item.bookingDate);
-                    if (normBooking !== dateVal) return false;
+                    const normDelivery = normalizeDate(item.deliveryDate);
+                    
+                    // ดึงรายการมาแสดงถ้า "วันที่นัดรับตรง" OR "วันที่ส่งจริงตรง" กับวันที่เลือกใน Filter
+                    if (normBooking !== dateVal && normDelivery !== dateVal) {
+                        return false;
+                    }
                 }
                 if (searchVal) {
-                    const po = (item.poNumber || '').toLowerCase();
+                    const po = (poNumber || '').toLowerCase();
                     const comp = (item.company || '').toLowerCase();
                     if (!po.includes(searchVal) && !comp.includes(searchVal)) return false;
                 }
@@ -568,21 +575,24 @@
                     : `<span class="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-500">ไม่ครบ</span>`;
 
 let rawLink = String(item.docLink || '').trim();
-let docBtn = '';
+                let docBtn = '';
 
-if (rawLink.toLowerCase().includes('http')) {
-    // 1. กรณีเป็น URL ตัวเต็ม
-    const cleanUrl = rawLink.substring(rawLink.toLowerCase().indexOf('http'));
-    docBtn = `<a href="${cleanUrl}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium bg-blue-50 text-blue-600 border border-blue-200 rounded-md hover:bg-blue-100"><i class="fa-solid fa-file-pdf"></i> เอกสาร</a>`;
-} else if (rawLink !== '' && rawLink !== '-' && rawLink !== 'undefined' && rawLink !== 'null') {
-    // ใช้ SharePoint Search ค้นหาชื่อไฟล์โดยตรง (ไม่ติด 404 และค้นพบทุกโฟลเดอร์เดือน)
-    const cleanFileName = encodeURIComponent(rawLink);
-    const searchUrl = `https://tdsupplychain-my.sharepoint.com/personal/dc4_return_tdsc_co_th/_layouts/15/search.aspx?q=${cleanFileName}`;
-    docBtn = `<a href="${searchUrl}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium bg-blue-50 text-blue-600 border border-blue-200 rounded-md hover:bg-blue-100"><i class="fa-solid fa-file-pdf"></i> เอกสาร</a>`;
-} else {
-    // กรณีไม่มีเอกสาร
-    docBtn = `<span class="text-slate-300 text-xs">-</span>`;
-}
+                if (rawLink.toLowerCase().includes('http')) {
+                    // 1. มี URL ตัวเต็ม
+                    const cleanUrl = rawLink.substring(rawLink.toLowerCase().indexOf('http'));
+                    docBtn = `<a href="${cleanUrl}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium bg-blue-50 text-blue-600 border border-blue-200 rounded-md hover:bg-blue-100"><i class="fa-solid fa-file-pdf"></i> เอกสาร</a>`;
+                } else if (rawLink !== '' && rawLink !== '-' && rawLink !== 'undefined' && rawLink !== 'null') {
+                    // 2. มีเฉพาะชื่อไฟล์ PDF (ต่อ Path OneDrive อัตโนมัติ)
+                    const fileUrl = `https://tdsupplychain-my.sharepoint.com/personal/dc4_return_tdsc_co_th/Documents/${encodeURIComponent(rawLink)}`;
+                    docBtn = `<a href="${fileUrl}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium bg-blue-50 text-blue-600 border border-blue-200 rounded-md hover:bg-blue-100"><i class="fa-solid fa-file-pdf"></i> เอกสาร</a>`;
+                } else if (item.status === 'ส่งแล้ว' || itemStatus !== 'ยังไม่ส่ง') {
+                    // 3. ส่งสินค้าแล้วแต่ไม่มีชื่อไฟล์ใน Excel ให้แสดงปุ่มค้นหาโฟลเดอร์หลัก
+                    const mainFolderUrl = "https://tdsupplychain-my.sharepoint.com/personal/dc4_return_tdsc_co_th/Documents/";
+                    docBtn = `<a href="${mainFolderUrl}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200 rounded-md hover:bg-amber-100"><i class="fa-solid fa-folder-open"></i> ค้นหาไฟล์</a>`;
+                } else {
+                    // 4. ยังไม่ได้ส่งสินค้า
+                    docBtn = `<span class="text-slate-300 text-xs">-</span>`;
+                }
                 let remarkText = item.remark || item.missingReason || '-';
                 if (isDuplicatePo) {
                     remarkText = `<span class="text-purple-600 font-semibold">⚠️ พบเลข PO ซ้ำกัน (${item.poNumber})</span>` + (remarkText !== '-' ? ` | ${remarkText}` : '');
