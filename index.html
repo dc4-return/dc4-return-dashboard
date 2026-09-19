@@ -582,9 +582,10 @@ let rawLink = String(item.docLink || '').trim();
                     const cleanUrl = rawLink.substring(rawLink.toLowerCase().indexOf('http'));
                     docBtn = `<a href="${cleanUrl}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium bg-blue-50 text-blue-600 border border-blue-200 rounded-md hover:bg-blue-100"><i class="fa-solid fa-file-pdf"></i> เอกสาร</a>`;
                 } else if (rawLink !== '' && rawLink !== '-' && rawLink !== 'undefined' && rawLink !== 'null') {
-                    // 2. มีเฉพาะชื่อไฟล์ PDF (ต่อ Path OneDrive อัตโนมัติ)
-                    const fileUrl = `https://tdsupplychain-my.sharepoint.com/personal/dc4_return_tdsc_co_th/Documents/${encodeURIComponent(rawLink)}`;
-                    docBtn = `<a href="${fileUrl}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium bg-blue-50 text-blue-600 border border-blue-200 rounded-md hover:bg-blue-100"><i class="fa-solid fa-file-pdf"></i> เอกสาร</a>`;
+                    // 2. ใช้ SharePoint Search ค้นหาชื่อไฟล์โดยตรง (ไม่ติด 404 และค้นพบทุกโฟลเดอร์เดือน)
+                    const cleanFileName = encodeURIComponent(rawLink);
+                    const searchUrl = `https://tdsupplychain-my.sharepoint.com/personal/dc4_return_tdsc_co_th/_layouts/15/search.aspx?q=${cleanFileName}`;
+                    docBtn = `<a href="${searchUrl}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium bg-blue-50 text-blue-600 border border-blue-200 rounded-md hover:bg-blue-100"><i class="fa-solid fa-file-pdf"></i> เอกสาร</a>`;
                 } else if (item.status === 'ส่งแล้ว' || itemStatus !== 'ยังไม่ส่ง') {
                     // 3. ส่งสินค้าแล้วแต่ไม่มีชื่อไฟล์ใน Excel ให้แสดงปุ่มค้นหาโฟลเดอร์หลัก
                     const mainFolderUrl = "https://tdsupplychain-my.sharepoint.com/personal/dc4_return_tdsc_co_th/Documents/";
