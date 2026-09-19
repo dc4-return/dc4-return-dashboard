@@ -368,7 +368,7 @@
             const incompleteCount = data.filter(d => !d.isComplete).length;
 
             // 📌 คำนวณ % ส่งมอบสำเร็จ (รวมมารับก่อนกำหนด + ตรงตามนัด)
-            const completedCount = earlyCount + onTimeCount;
+            const completedCount = earlyCount + onTimeCount + lateCount;
             const successRate = totalPo > 0 ? Math.round((completedCount / totalPo) * 100) : 0;
 
             // อัปเดตการ์ด PO ทั้งหมด + หลอด Progress Bar
@@ -404,7 +404,7 @@
             const pending = data.filter(d => getItemStatus(d) === 'ยังไม่ส่ง').length;
 
             const total = data.length;
-            const completedCount = early + onTime;
+            const completedCount = early + onTime + late;
             const successRate = total > 0 ? Math.round((completedCount / total) * 100) : 0;
 
             // Plugin สำหรับเขียนตัวเลข % ตรงกลางรูวงกลม
