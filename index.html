@@ -39,11 +39,14 @@
 
         <!-- KPI Cards Grid -->
         <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-6">
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col justify-between hover:border-slate-300 transition">
+<div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col justify-between hover:shadow-md transition-all">
                 <span class="text-xs font-bold text-slate-500"><i class="fa-solid fa-box text-amber-800 mr-1"></i> PO ทั้งหมด</span>
                 <div class="mt-2 flex items-baseline justify-between">
                     <span id="kpiTotalPo" class="text-2xl font-black text-slate-800">0</span>
-                    <span class="text-[10px] text-slate-400 font-semibold">รายการ</span>
+                    <span id="kpiSuccessRate" class="text-xs font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">0% สำเร็จ</span>
+                </div>
+                <div class="w-full bg-slate-100 rounded-full h-1.5 mt-2 overflow-hidden">
+                    <div id="kpiProgressBar" class="bg-emerald-500 h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
                 </div>
             </div>
             <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-b-blue-500 border-x border-t border-slate-100 flex flex-col justify-between">
@@ -351,7 +354,7 @@
             renderTable(filteredData);
         }
 
-        function renderKPIs(data) {
+       function renderKPIs(data) {
             const totalPo = data.length;
 
             const earlyCount = data.filter(d => getItemStatus(d) === 'มารับก่อนกำหนด').length;
@@ -359,19 +362,39 @@
             const lateCount = data.filter(d => getItemStatus(d) === 'มารับล่าช้า').length;
             const pendingCount = data.filter(d => getItemStatus(d) === 'ยังไม่ส่ง').length;
 
-            const hasDocCount = data.filter(d => d.docLink && String(d.docLink).trim() !== '' && String(d.docLink).trim() !== '-').length;
+            const hasDocCount = data.filter(d => d.docLink && String(d.docLink).trim() !== '' && String(d.docLink).trim() !== '-' && String(d.docLink).trim() !== 'undefined').length;
             const docPercent = totalPo > 0 ? Math.round((hasDocCount / totalPo) * 100) : 0;
 
             const incompleteCount = data.filter(d => !d.isComplete).length;
 
+            // 📌 คำนวณ % ส่งมอบสำเร็จ (รวมมารับก่อนกำหนด + ตรงตามนัด)
+            const completedCount = earlyCount + onTimeCount;
+            const successRate = totalPo > 0 ? Math.round((completedCount / totalPo) * 100) : 0;
+
+            // อัปเดตการ์ด PO ทั้งหมด + หลอด Progress Bar
             document.getElementById('kpiTotalPo').innerText = totalPo;
+            if (document.getElementById('kpiSuccessRate')) {
+                document.getElementById('kpiSuccessRate').innerText = `${successRate}% สำเร็จ`;
+            }
+            if (document.getElementById('kpiProgressBar')) {
+                document.getElementById('kpiProgressBar').style.width = `${successRate}%`;
+            }
+
+            // อัปเดตการ์ดสถานะอื่นๆ
             document.getElementById('kpiEarly').innerText = earlyCount;
             document.getElementById('kpiOnTime').innerText = onTimeCount;
             document.getElementById('kpiLate').innerText = lateCount;
             document.getElementById('kpiPending').innerText = pendingCount;
-            document.getElementById('kpiDocPercent').innerText = `${docPercent}%`;
-            document.getElementById('kpiDocRatio').innerText = `${hasDocCount}/${totalPo}`;
-            document.getElementById('kpiIncomplete').innerText = incompleteCount;
+            
+            if (document.getElementById('kpiDocPercent')) {
+                document.getElementById('kpiDocPercent').innerText = `${docPercent}%`;
+            }
+            if (document.getElementById('kpiDocRatio')) {
+                document.getElementById('kpiDocRatio').innerText = `${hasDocCount}/${totalPo}`;
+            }
+            if (document.getElementById('kpiIncomplete')) {
+                document.getElementById('kpiIncomplete').innerText = incompleteCount;
+            }
         }
 
         function renderCharts(data) {
