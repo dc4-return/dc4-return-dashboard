@@ -254,14 +254,36 @@
             return 'ยังไม่ส่ง';
         }
 
-        async function fetchData() {
+   async function fetchData() {
+            const cacheKey = 'dashboard_excel_data';
+            const cacheTimeKey = 'dashboard_excel_time';
+            
+            // 1. อ่านข้อมูลเก่าจาก Cache มาโชว์ทันที (ป้องกันหน้าเว็บขึ้นเลข 0)
+            const cachedData = localStorage.getItem(cacheKey);
+            const cachedTime = localStorage.getItem(cacheTimeKey);
+            if (cachedData) {
+                try {
+                    allData = JSON.parse(cachedData);
+                    updateDashboard();
+                    if (cachedTime) {
+                        const lastUpdateEl = document.getElementById('lastUpdated');
+                        if (lastUpdateEl) lastUpdateEl.innerText = `• อัปเดตล่าสุด (Cache): ${cachedTime}`;
+                    }
+                } catch (e) {
+                    console.error("Cache parse error", e);
+                }
+            }
+
+            // 2. ดึงข้อมูลใหม่จาก Power Automate
             try {
                 const res = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' }
                 });
-                let responseData = await res.json();
                 
+                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                let responseData = await res.json();
+
                 if (typeof responseData === 'string') {
                     try { responseData = JSON.parse(responseData); } catch(e){}
                 }
@@ -281,33 +303,40 @@
                     items = Array.isArray(bRes) ? bRes : (bRes.items || []);
                 }
 
-                poCountsMap = {};
-                rawData = items.map(item => {
-                    const po = String(item.po || item.poNumber || '').trim();
-                    if (po && po !== '-' && po !== '0') {
-                        poCountsMap[po] = (poCountsMap[po] || 0) + 1;
-                    }
-                    return {
-                        poNumber: po,
-                        company: item.company || '',
-                        status: item.status || '',
-                        prepStatus: item.prepare || item.prepStatus || '',
-                        bookingDate: item.bookingDate || '',
-                        deliveryDate: item.deliveryDate || '',
-                        onTimeStatus: item.onTimeStatus || '',
-                        docLink: item.docLink || '',
-                        remark: item.remark || '',
-                        isComplete: item.isComplete !== undefined ? item.isComplete : true,
-                        missingReason: item.missingReason || ''
-                    };
-                });
+                // 3. ถ้ารับข้อมูลสำเร็จ บันทึกลง Cache ใหม่และอัปเดตหน้าจอ
+                if (Array.isArray(items) && items.length > 0) {
+                    const poCountsMap = {};
+                    allData = items.map(item => {
+                        const po = item.poNumber || item['เลข PO'] || item.po || '';
+                        if (po && po !== '-' && po !== '0') {
+                            poCountsMap[po] = (poCountsMap[po] || 0) + 1;
+                        }
+                        return {
+                            poNumber: po,
+                            company: item.company || '',
+                            status: item.status || '',
+                            prepStatus: item.prepare || item.prepStatus || '',
+                            bookingDate: item.bookingDate || '',
+                            deliveryDate: item.deliveryDate || '',
+                            onTimeStatus: item.onTimeStatus || '',
+                            docLink: item.docLink || '',
+                            remark: item.remark || '',
+                            isComplete: item.isComplete !== undefined ? item.isComplete : true,
+                            missingReason: item.missingReason || ''
+                        };
+                    });
 
-                const nowTime = new Date();
-                document.getElementById('lastUpdated').innerText = `● อัปเดตล่าสุด: ${nowTime.toTimeString().split(' ')[0]}`;
-
-                updateDashboard();
-            } catch (err) {
-                console.error("Fetch Data Error:", err);
+                    const nowStr = new Date().toLocaleTimeString('th-TH');
+                    localStorage.setItem(cacheKey, JSON.stringify(allData));
+                    localStorage.setItem(cacheTimeKey, nowStr);
+                    
+                    updateDashboard();
+                    const lastUpdateEl = document.getElementById('lastUpdated');
+                    if (lastUpdateEl) lastUpdateEl.innerText = `• อัปเดตล่าสุด: ${nowStr}`;
+                }
+            } catch (error) {
+                console.error("Fetch Data Error:", error);
+                // ถ้าติด 504 Timeout หน้าเว็บจะไม่กลายเป็นเลข 0 แต่จะแสดงข้อมูล Cache ล่าสุดต่อได้ทันที
             }
         }
 
@@ -673,7 +702,7 @@ let rawLink = String(item.docLink || '').trim();
         document.getElementById('filterCompleteness').addEventListener('change', updateDashboard);
 
         fetchData();
-        setInterval(fetchData, 30000);
+        setInterval(fetchData, 120000);
     </script>
 </body>
 </html>
