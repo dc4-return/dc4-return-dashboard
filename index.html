@@ -335,11 +335,10 @@
                     localStorage.setItem(cacheKey, JSON.stringify(allData));
                     localStorage.setItem(cacheTimeKey, nowStr);
                     
-                    if (typeof applyFilters === 'function') {
-                        applyFilters();
-                    } else if (typeof updateDashboard === 'function') {
-                        updateDashboard();
-                    }
+                   // ✅ เปลี่ยนเป็นสั่ง updateDashboard() โดยตรง
+if (typeof updateDashboard === 'function') {
+    updateDashboard();
+}
 
                     const lastUpdateEl = document.getElementById('lastUpdated');
                     if (lastUpdateEl) lastUpdateEl.innerText = `• อัปเดตล่าสุด: ${nowStr}`;
@@ -359,7 +358,7 @@
             const statusVal = document.getElementById('filterDeliveryStatus').value;
             const completeVal = document.getElementById('filterCompleteness').value;
 
-            let filteredData = rawData.filter(item => {
+            let filteredData = allData.filter(item => {
                 const poNumber = item.po || item.poNumber;
                 
                 if (dateVal) {
@@ -712,10 +711,10 @@ let rawLink = String(item.docLink || '').trim();
         document.getElementById('filterBookingDate').addEventListener('change', updateDashboard);
         document.getElementById('filterSearchText').addEventListener('input', updateDashboard);
         document.getElementById('filterDeliveryStatus').addEventListener('change', updateDashboard);
-        document.getElementById('filterCompleteness').addEventListener('change', updateDashboard);
+       document.getElementById('filterCompleteness').addEventListener('change', updateDashboard);
 
+        // ดึงข้อมูลและประมวลผลตัวกรองเมื่อโหลดหน้าเว็บ
         fetchData();
         setInterval(fetchData, 120000);
-    </script>
 </body>
 </html>
