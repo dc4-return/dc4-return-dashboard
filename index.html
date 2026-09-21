@@ -699,14 +699,15 @@ let rawLink = String(item.docLink || '').trim();
             tbody.innerHTML = html;
         }
 
-        // Event Listeners สำหรับ Filter ทั้ง 4 ช่อง
+  // Event Listeners สำหรับ Filter ทั้ง 4 ช่อง
         document.getElementById('filterBookingDate').addEventListener('change', updateDashboard);
         document.getElementById('filterSearchText').addEventListener('input', updateDashboard);
         document.getElementById('filterDeliveryStatus').addEventListener('change', updateDashboard);
-       document.getElementById('filterCompleteness').addEventListener('change', updateDashboard);
+        document.getElementById('filterCompleteness').addEventListener('change', updateDashboard);
 
-        // ดึงข้อมูลและประมวลผลตัวกรองเมื่อโหลดหน้าเว็บ
+        // ดึงข้อมูลเมื่อโหลดหน้าเว็บ
         fetchData();
         setInterval(fetchData, 120000);
+    </script>
 </body>
 </html>
