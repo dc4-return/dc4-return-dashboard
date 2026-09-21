@@ -254,17 +254,17 @@
             return 'ยังไม่ส่ง';
         }
 
-   async function fetchData() {
+ async function fetchData() {
             const cacheKey = 'dashboard_excel_data';
             const cacheTimeKey = 'dashboard_excel_time';
             
-            // 1. อ่านข้อมูลเก่าจาก Cache มาโชว์ทันที (ป้องกันหน้าเว็บขึ้นเลข 0)
+            // 1. อ่านข้อมูลเก่าจาก Cache มาโชว์ทันที
             const cachedData = localStorage.getItem(cacheKey);
             const cachedTime = localStorage.getItem(cacheTimeKey);
             if (cachedData) {
                 try {
                     allData = JSON.parse(cachedData);
-                    updateDashboard();
+                    if (typeof updateDashboard === 'function') updateDashboard();
                     if (cachedTime) {
                         const lastUpdateEl = document.getElementById('lastUpdated');
                         if (lastUpdateEl) lastUpdateEl.innerText = `• อัปเดตล่าสุด (Cache): ${cachedTime}`;
@@ -303,8 +303,8 @@
                     items = Array.isArray(bRes) ? bRes : (bRes.items || []);
                 }
 
-                // 3. ถ้ารับข้อมูลสำเร็จ บันทึกลง Cache ใหม่และอัปเดตหน้าจอ
-              if (Array.isArray(items) && items.length > 0) {
+                // 3. แปลงข้อมูลและบันทึกลง Cache
+                if (Array.isArray(items) && items.length > 0) {
                     allData = items.map(item => {
                         const po = item['เลข PO'] || item.poNumber || item.po || '';
                         const comp = item['ชื่อบริษัท'] || item.company || item.Vendor || '';
@@ -323,7 +323,7 @@
                             prepStatus: prep,
                             bookingDate: bDate,
                             deliveryDate: dDate,
-                            onTimeStatus: st, // ใช้สถานะคำนวณการตรงเวลา
+                            onTimeStatus: st,
                             docLink: link,
                             remark: rem,
                             isComplete: true,
@@ -335,23 +335,15 @@
                     localStorage.setItem(cacheKey, JSON.stringify(allData));
                     localStorage.setItem(cacheTimeKey, nowStr);
                     
-                   // ✅ เปลี่ยนเป็นสั่ง updateDashboard() โดยตรง
-if (typeof updateDashboard === 'function') {
-    updateDashboard();
-}
+                    if (typeof updateDashboard === 'function') updateDashboard();
 
                     const lastUpdateEl = document.getElementById('lastUpdated');
                     if (lastUpdateEl) lastUpdateEl.innerText = `• อัปเดตล่าสุด: ${nowStr}`;
                 }
-
-                    
-                  
             } catch (error) {
                 console.error("Fetch Data Error:", error);
-                // ถ้าติด 504 Timeout หน้าเว็บจะไม่กลายเป็นเลข 0 แต่จะแสดงข้อมูล Cache ล่าสุดต่อได้ทันที
             }
         }
-
       function updateDashboard() {
             const dateVal = document.getElementById('filterBookingDate').value;
             const searchVal = document.getElementById('filterSearchText').value.toLowerCase().trim();
