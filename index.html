@@ -304,27 +304,20 @@
                 }
 
                 // 3. ถ้ารับข้อมูลสำเร็จ บันทึกลง Cache ใหม่และอัปเดตหน้าจอ
-                if (Array.isArray(items) && items.length > 0) {
-                    const poCountsMap = {};
-                    allData = items.map(item => {
-                        const po = item.poNumber || item['เลข PO'] || item.po || '';
-                        if (po && po !== '-' && po !== '0') {
-                            poCountsMap[po] = (poCountsMap[po] || 0) + 1;
-                        }
-                        return {
-                            poNumber: po,
-                            company: item.company || '',
-                            status: item.status || '',
-                            prepStatus: item.prepare || item.prepStatus || '',
-                            bookingDate: item.bookingDate || '',
-                            deliveryDate: item.deliveryDate || '',
-                            onTimeStatus: item.onTimeStatus || '',
-                            docLink: item.docLink || '',
-                            remark: item.remark || '',
-                            isComplete: item.isComplete !== undefined ? item.isComplete : true,
-                            missingReason: item.missingReason || ''
-                        };
-                    });
+               if (Array.isArray(items) && items.length > 0) {
+                    allData = items.map(item => ({
+                        poNumber: item.poNumber || item['เลข PO'] || item.po || '',
+                        company: item.company || item['ชื่อบริษัท'] || item.vendor || '',
+                        status: item.status || item['สถานะการส่งมอบ'] || '',
+                        prepStatus: item.prepare || item.prepStatus || item['สถานะความพร้อมสินค้า'] || '',
+                        bookingDate: item.bookingDate || item['วันที่นัดรับ'] || '',
+                        deliveryDate: item.deliveryDate || item['วันที่เข้ารับจริง'] || '',
+                        onTimeStatus: item.onTimeStatus || item['สถานะรับสินค้า'] || '',
+                        docLink: item.docLink || item['ลิงก์เอกสาร'] || '',
+                        remark: item.remark || item['หมายเหตุ'] || '',
+                        isComplete: item.isComplete !== undefined ? item.isComplete : true,
+                        missingReason: item.missingReason || ''
+                    }));
 
                     const nowStr = new Date().toLocaleTimeString('th-TH');
                     localStorage.setItem(cacheKey, JSON.stringify(allData));
