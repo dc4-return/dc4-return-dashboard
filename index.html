@@ -39,7 +39,7 @@
 
         <!-- KPI Cards Grid -->
         <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-6">
-<div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col justify-between hover:shadow-md transition-all">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col justify-between hover:shadow-md transition-all">
                 <span class="text-xs font-bold text-slate-500"><i class="fa-solid fa-box text-amber-800 mr-1"></i> PO ทั้งหมด</span>
                 <div class="mt-2 flex items-baseline justify-between">
                     <span id="kpiTotalPo" class="text-2xl font-black text-slate-800">0</span>
@@ -197,7 +197,7 @@
     <script>
         const API_URL = "https://default9d87aed0f2074116892653696ef7af.73.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/30/workflows/33cb5783ad2f4f58b1ac9259000d8cf6/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Y_upTX2neyO22yKrX_KBGbXj6NEkokPy4R9nfVLR3Ow";
         
-        let rawData = [];
+        let allData = [];
         let poCountsMap = {};
         let onTimeChartObj = null;
         let prepareChartObj = null;
@@ -254,7 +254,7 @@
             return 'ยังไม่ส่ง';
         }
 
- async function fetchData() {
+        async function fetchData() {
             const cacheKey = 'dashboard_excel_data';
             const cacheTimeKey = 'dashboard_excel_time';
             
@@ -264,6 +264,7 @@
             if (cachedData) {
                 try {
                     allData = JSON.parse(cachedData);
+                    rebuildPoCountsMap();
                     if (typeof updateDashboard === 'function') updateDashboard();
                     if (cachedTime) {
                         const lastUpdateEl = document.getElementById('lastUpdated');
@@ -331,6 +332,8 @@
                         };
                     });
 
+                    rebuildPoCountsMap();
+
                     const nowStr = new Date().toLocaleTimeString('th-TH');
                     localStorage.setItem(cacheKey, JSON.stringify(allData));
                     localStorage.setItem(cacheTimeKey, nowStr);
@@ -344,20 +347,30 @@
                 console.error("Fetch Data Error:", error);
             }
         }
-      function updateDashboard() {
+
+        function rebuildPoCountsMap() {
+            poCountsMap = {};
+            allData.forEach(item => {
+                const po = item.poNumber;
+                if (po && po !== '-' && po !== '0') {
+                    poCountsMap[po] = (poCountsMap[po] || 0) + 1;
+                }
+            });
+        }
+
+        function updateDashboard() {
             const dateVal = document.getElementById('filterBookingDate').value;
             const searchVal = document.getElementById('filterSearchText').value.toLowerCase().trim();
             const statusVal = document.getElementById('filterDeliveryStatus').value;
             const completeVal = document.getElementById('filterCompleteness').value;
 
             let filteredData = allData.filter(item => {
-                const poNumber = item.po || item.poNumber;
+                const poNumber = item.poNumber || item.po;
                 
                 if (dateVal) {
                     const normBooking = normalizeDate(item.bookingDate);
                     const normDelivery = normalizeDate(item.deliveryDate);
                     
-                    // ดึงรายการมาแสดงถ้า "วันที่นัดรับตรง" OR "วันที่ส่งจริงตรง" กับวันที่เลือกใน Filter
                     if (normBooking !== dateVal && normDelivery !== dateVal) {
                         return false;
                     }
@@ -380,14 +393,14 @@
                 return true;
             });
 
-            document.getElementById('filterSummary').innerText = `แสดงข้อมูลตามตัวกรอง: ${filteredData.length} รายการ (จากทั้งหมด ${rawData.length} รายการ)`;
+            document.getElementById('filterSummary').innerText = `แสดงข้อมูลตามตัวกรอง: ${filteredData.length} รายการ (จากทั้งหมด ${allData.length} รายการ)`;
 
             renderKPIs(filteredData);
             renderCharts(filteredData);
             renderTable(filteredData);
         }
 
-       function renderKPIs(data) {
+        function renderKPIs(data) {
             const totalPo = data.length;
 
             const earlyCount = data.filter(d => getItemStatus(d) === 'มารับก่อนกำหนด').length;
@@ -400,11 +413,9 @@
 
             const incompleteCount = data.filter(d => !d.isComplete).length;
 
-            // 📌 คำนวณ % ส่งมอบสำเร็จ (รวมมารับก่อนกำหนด + ตรงตามนัด)
             const completedCount = earlyCount + onTimeCount + lateCount;
             const successRate = totalPo > 0 ? Math.round((completedCount / totalPo) * 100) : 0;
 
-            // อัปเดตการ์ด PO ทั้งหมด + หลอด Progress Bar
             document.getElementById('kpiTotalPo').innerText = totalPo;
             if (document.getElementById('kpiSuccessRate')) {
                 document.getElementById('kpiSuccessRate').innerText = `${successRate}% สำเร็จ`;
@@ -413,7 +424,6 @@
                 document.getElementById('kpiProgressBar').style.width = `${successRate}%`;
             }
 
-            // อัปเดตการ์ดสถานะอื่นๆ
             document.getElementById('kpiEarly').innerText = earlyCount;
             document.getElementById('kpiOnTime').innerText = onTimeCount;
             document.getElementById('kpiLate').innerText = lateCount;
@@ -430,7 +440,7 @@
             }
         }
 
-       function renderCharts(data) {
+        function renderCharts(data) {
             const early = data.filter(d => getItemStatus(d) === 'มารับก่อนกำหนด').length;
             const onTime = data.filter(d => getItemStatus(d) === 'ตรงตามนัด').length;
             const late = data.filter(d => getItemStatus(d) === 'มารับล่าช้า').length;
@@ -440,7 +450,6 @@
             const completedCount = early + onTime + late;
             const successRate = total > 0 ? Math.round((completedCount / total) * 100) : 0;
 
-            // Plugin สำหรับเขียนตัวเลข % ตรงกลางรูวงกลม
             const centerTextPlugin = {
                 id: 'centerText',
                 beforeDraw(chart) {
@@ -449,11 +458,11 @@
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     
-                    ctx.font = 'bold 20px Kanit, sans-serif';
+                    ctx.font = 'bold 20px Sarabun, sans-serif';
                     ctx.fillStyle = '#10B981';
                     ctx.fillText(`${successRate}%`, width / 2, height / 2 - 8);
                     
-                    ctx.font = '10px Kanit, sans-serif';
+                    ctx.font = '10px Sarabun, sans-serif';
                     ctx.fillStyle = '#64748B';
                     ctx.fillText('ส่งมอบสำเร็จ', width / 2, height / 2 + 12);
                     
@@ -657,26 +666,23 @@
                     ? `<span class="px-2 py-0.5 rounded text-[11px] font-medium bg-blue-50 text-blue-600 border border-blue-100">ครบแล้ว</span>`
                     : `<span class="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-500">ไม่ครบ</span>`;
 
-let rawLink = String(item.docLink || '').trim();
+                let rawLink = String(item.docLink || '').trim();
                 let docBtn = '';
 
                 if (rawLink.toLowerCase().includes('http')) {
-                    // 1. มี URL ตัวเต็ม
                     const cleanUrl = rawLink.substring(rawLink.toLowerCase().indexOf('http'));
                     docBtn = `<a href="${cleanUrl}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium bg-blue-50 text-blue-600 border border-blue-200 rounded-md hover:bg-blue-100"><i class="fa-solid fa-file-pdf"></i> เอกสาร</a>`;
                 } else if (rawLink !== '' && rawLink !== '-' && rawLink !== 'undefined' && rawLink !== 'null') {
-                    // 2. ใช้ SharePoint Search ค้นหาชื่อไฟล์โดยตรง (ไม่ติด 404 และค้นพบทุกโฟลเดอร์เดือน)
                     const cleanFileName = encodeURIComponent(rawLink);
                     const searchUrl = `https://tdsupplychain-my.sharepoint.com/personal/dc4_return_tdsc_co_th/_layouts/15/search.aspx?q=${cleanFileName}`;
                     docBtn = `<a href="${searchUrl}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium bg-blue-50 text-blue-600 border border-blue-200 rounded-md hover:bg-blue-100"><i class="fa-solid fa-file-pdf"></i> เอกสาร</a>`;
                 } else if (item.status === 'ส่งแล้ว' || itemStatus !== 'ยังไม่ส่ง') {
-                    // 3. ส่งสินค้าแล้วแต่ไม่มีชื่อไฟล์ใน Excel ให้แสดงปุ่มค้นหาโฟลเดอร์หลัก
                     const mainFolderUrl = "https://tdsupplychain-my.sharepoint.com/personal/dc4_return_tdsc_co_th/Documents/";
                     docBtn = `<a href="${mainFolderUrl}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200 rounded-md hover:bg-amber-100"><i class="fa-solid fa-folder-open"></i> ค้นหาไฟล์</a>`;
                 } else {
-                    // 4. ยังไม่ได้ส่งสินค้า
                     docBtn = `<span class="text-slate-300 text-xs">-</span>`;
                 }
+                
                 let remarkText = item.remark || item.missingReason || '-';
                 if (isDuplicatePo) {
                     remarkText = `<span class="text-purple-600 font-semibold">⚠️ พบเลข PO ซ้ำกัน (${item.poNumber})</span>` + (remarkText !== '-' ? ` | ${remarkText}` : '');
@@ -699,7 +705,7 @@ let rawLink = String(item.docLink || '').trim();
             tbody.innerHTML = html;
         }
 
-  // Event Listeners สำหรับ Filter ทั้ง 4 ช่อง
+        // Event Listeners สำหรับ Filter ทั้ง 4 ช่อง
         document.getElementById('filterBookingDate').addEventListener('change', updateDashboard);
         document.getElementById('filterSearchText').addEventListener('input', updateDashboard);
         document.getElementById('filterDeliveryStatus').addEventListener('change', updateDashboard);
