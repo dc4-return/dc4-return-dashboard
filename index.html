@@ -304,29 +304,49 @@
                 }
 
                 // 3. ถ้ารับข้อมูลสำเร็จ บันทึกลง Cache ใหม่และอัปเดตหน้าจอ
-               if (Array.isArray(items) && items.length > 0) {
-                    allData = items.map(item => ({
-                        poNumber: item.poNumber || item['เลข PO'] || item.po || '',
-                        company: item.company || item['ชื่อบริษัท'] || item.vendor || '',
-                        status: item.status || item['สถานะการส่งมอบ'] || '',
-                        prepStatus: item.prepare || item.prepStatus || item['สถานะความพร้อมสินค้า'] || '',
-                        bookingDate: item.bookingDate || item['วันที่นัดรับ'] || '',
-                        deliveryDate: item.deliveryDate || item['วันที่เข้ารับจริง'] || '',
-                        onTimeStatus: item.onTimeStatus || item['สถานะรับสินค้า'] || '',
-                        docLink: item.docLink || item['ลิงก์เอกสาร'] || '',
-                        remark: item.remark || item['หมายเหตุ'] || '',
-                        isComplete: item.isComplete !== undefined ? item.isComplete : true,
-                        missingReason: item.missingReason || ''
-                    }));
+              if (Array.isArray(items) && items.length > 0) {
+                    allData = items.map(item => {
+                        const po = item['เลข PO'] || item.poNumber || item.po || '';
+                        const comp = item['ชื่อบริษัท'] || item.company || item.Vendor || '';
+                        const st = item['Status'] || item.status || '';
+                        const prep = item['Status เตรียมสินค้า'] || item.prepStatus || item.prepare || '';
+                        const bDate = item['วันที่นัดรับ'] || item.bookingDate || '';
+                        const dDate = item['วันที่ส่งสินค้า'] || item.deliveryDate || item['วันที่เข้ารับจริง'] || '';
+                        const link = item['ลิงค์เอกสารใบนําออก'] || item['ลิงก์เอกสาร'] || item.docLink || '';
+                        const rem = item['หมายเหตุ'] || item.remark || '';
+                        const reason = item.missingReason || '';
+
+                        return {
+                            poNumber: po,
+                            company: comp,
+                            status: st,
+                            prepStatus: prep,
+                            bookingDate: bDate,
+                            deliveryDate: dDate,
+                            onTimeStatus: st, // ใช้สถานะคำนวณการตรงเวลา
+                            docLink: link,
+                            remark: rem,
+                            isComplete: true,
+                            missingReason: reason
+                        };
+                    });
 
                     const nowStr = new Date().toLocaleTimeString('th-TH');
                     localStorage.setItem(cacheKey, JSON.stringify(allData));
                     localStorage.setItem(cacheTimeKey, nowStr);
                     
-                    updateDashboard();
+                    if (typeof applyFilters === 'function') {
+                        applyFilters();
+                    } else if (typeof updateDashboard === 'function') {
+                        updateDashboard();
+                    }
+
                     const lastUpdateEl = document.getElementById('lastUpdated');
                     if (lastUpdateEl) lastUpdateEl.innerText = `• อัปเดตล่าสุด: ${nowStr}`;
                 }
+
+                    
+                  
             } catch (error) {
                 console.error("Fetch Data Error:", error);
                 // ถ้าติด 504 Timeout หน้าเว็บจะไม่กลายเป็นเลข 0 แต่จะแสดงข้อมูล Cache ล่าสุดต่อได้ทันที
